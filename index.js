@@ -1,8 +1,11 @@
 const express = require('express');
+const cors = require('cors');  // Import cors
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(express.json()); 
+// Use CORS middleware
+app.use(cors());
+app.use(express.json());
 
 let recommendations = [
   { id: 1, title: 'Blinding Lights', artist: 'The Weeknd', genre: 'pop' },
@@ -17,6 +20,12 @@ let recommendations = [
   { id: 10, title: 'Smells Like Teen Spirit', artist: 'Nirvana', genre: 'rock' }
 ];
 
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Root endpoint with available routes
 app.get('/', (req, res) => {
   res.json({
     message: 'Music Recommendation API is running.',
@@ -31,10 +40,7 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
+// Get all recommendations or filter by genre
 app.get('/recommendations', (req, res) => {
   const genre = (req.query.genre || '').toLowerCase();
   if (genre) {
@@ -44,6 +50,7 @@ app.get('/recommendations', (req, res) => {
   res.json({ count: recommendations.length, recommendations });
 });
 
+// Get one recommendation by id
 app.get('/recommendations/:id', (req, res) => {
   const id = Number(req.params.id);
   const item = recommendations.find(r => r.id === id);
@@ -53,6 +60,7 @@ app.get('/recommendations/:id', (req, res) => {
   res.json(item);
 });
 
+// Create a new recommendation
 app.post('/recommendations', (req, res) => {
   const { title, artist, genre } = req.body;
   if (!title || !artist || !genre) {
@@ -66,6 +74,7 @@ app.post('/recommendations', (req, res) => {
   res.status(201).json(newRecommendation);
 });
 
+// Update a recommendation
 app.put('/recommendations/:id', (req, res) => {
   const id = Number(req.params.id);
   const { title, artist, genre } = req.body;
@@ -83,6 +92,7 @@ app.put('/recommendations/:id', (req, res) => {
   res.json(recommendations[index]);
 });
 
+// Delete a recommendation
 app.delete('/recommendations/:id', (req, res) => {
   const id = Number(req.params.id);
   const index = recommendations.findIndex(r => r.id === id);
@@ -95,8 +105,15 @@ app.delete('/recommendations/:id', (req, res) => {
   res.status(204).end();
 });
 
+// Catch-all route for undefined endpoints
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
+});
+
+// Error handling for uncaught errors
+app.use((err, req, res, next) => {
+  console.error(err.stack);  // Log the error stack for debugging
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(port, () => {
