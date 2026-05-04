@@ -2,7 +2,9 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 
-const recommendations = [
+app.use(express.json()); 
+
+let recommendations = [
   { id: 1, title: 'Blinding Lights', artist: 'The Weeknd', genre: 'pop' },
   { id: 2, title: 'Levitating', artist: 'Dua Lipa', genre: 'pop' },
   { id: 3, title: 'Lose Yourself', artist: 'Eminem', genre: 'rap' },
@@ -21,6 +23,9 @@ app.get('/', (req, res) => {
     endpoints: [
       { path: '/recommendations', description: 'List all recommendations or filter by genre using ?genre=pop' },
       { path: '/recommendations/:id', description: 'Get one recommendation by id' },
+      { path: '/recommendations', description: 'Create a new recommendation (POST)' },
+      { path: '/recommendations/:id', description: 'Update a recommendation (PUT)' },
+      { path: '/recommendations/:id', description: 'Delete a recommendation (DELETE)' },
       { path: '/health', description: 'Health check endpoint' }
     ]
   });
@@ -46,6 +51,48 @@ app.get('/recommendations/:id', (req, res) => {
     return res.status(404).json({ error: 'Recommendation not found' });
   }
   res.json(item);
+});
+
+app.post('/recommendations', (req, res) => {
+  const { title, artist, genre } = req.body;
+  if (!title || !artist || !genre) {
+    return res.status(400).json({ error: 'Title, artist, and genre are required' });
+  }
+
+  const newId = recommendations.length ? recommendations[recommendations.length - 1].id + 1 : 1;
+  const newRecommendation = { id: newId, title, artist, genre };
+  recommendations.push(newRecommendation);
+
+  res.status(201).json(newRecommendation);
+});
+
+app.put('/recommendations/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const { title, artist, genre } = req.body;
+
+  if (!title || !artist || !genre) {
+    return res.status(400).json({ error: 'Title, artist, and genre are required' });
+  }
+
+  const index = recommendations.findIndex(r => r.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Recommendation not found' });
+  }
+
+  recommendations[index] = { id, title, artist, genre };
+  res.json(recommendations[index]);
+});
+
+app.delete('/recommendations/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const index = recommendations.findIndex(r => r.id === id);
+  
+  if (index === -1) {
+    return res.status(404).json({ error: 'Recommendation not found' });
+  }
+
+  recommendations.splice(index, 1);
+  res.status(204).end();
 });
 
 app.use((req, res) => {
